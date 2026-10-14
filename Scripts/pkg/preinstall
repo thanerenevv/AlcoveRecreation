@@ -1,0 +1,23 @@
+#!/bin/zsh
+# Runs as root before the payload is copied. Removes whatever version is installed so the new
+# one replaces it outright instead of being merged into the old bundle.
+# Installer passes: $1 package path, $2 install location, $3 target volume.
+
+APP="${3%/}/Applications/Alcove Recreation.app"
+
+# Quit every running copy (including one launched from a build folder) so the bundle is not
+# in use while it is replaced and two notches never end up on screen.
+if pgrep -x AlcoveRecreation >/dev/null; then
+    pkill -x AlcoveRecreation
+    for _ in {1..20}; do
+        pgrep -x AlcoveRecreation >/dev/null || break
+        sleep 0.25
+    done
+    pkill -9 -x AlcoveRecreation 2>/dev/null
+fi
+
+if [[ -d "$APP" ]]; then
+    rm -rf "$APP"
+fi
+
+exit 0

@@ -1,0 +1,11 @@
+#!/bin/zsh
+# Runs as root after the payload is in place. Starts the new version for the logged-in user.
+
+APP="${3%/}/Applications/Alcove Recreation.app"
+CONSOLE_USER="$(stat -f%Su /dev/console)"
+
+if [[ -d "$APP" && -n "$CONSOLE_USER" && "$CONSOLE_USER" != "root" ]]; then
+    launchctl asuser "$(id -u "$CONSOLE_USER")" sudo -u "$CONSOLE_USER" open "$APP" || true
+fi
+
+exit 0
