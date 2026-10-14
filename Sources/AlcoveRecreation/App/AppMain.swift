@@ -259,9 +259,9 @@ final class AppState: NSObject {
     @objc private func showAbout() { SettingsController.shared.show(tab: .about) }
     @objc private func showSettings() { SettingsController.shared.show() }
 
-    /// The About tab holds the release notes and the install button, so land there.
+    /// The General tab's Software Update section holds the release notes and install button.
     @objc private func checkForUpdates() {
-        SettingsController.shared.show(tab: .about)
+        SettingsController.shared.show(tab: .general)
         Task { @MainActor in
             if Updater.shared.availableRelease == nil { Updater.shared.check() }
         }

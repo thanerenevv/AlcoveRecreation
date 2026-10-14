@@ -118,7 +118,7 @@ exercises the hook installer against a copy.
 ## Updates (GitHub Releases)
 
 Not in the original. The app checks `https://api.github.com/repos/<owner>/<name>/releases/latest`
-about once a day (and from the menu bar item or About tab), compares the tag with its own
+about once a day (and from the menu bar item or Settings → General → Software Update), compares the tag with its own
 version, and can download and install the release in place.
 
 - Set the repository in `Resources/Info.plist` (`UpdateRepository`, `owner/name`), or for testing

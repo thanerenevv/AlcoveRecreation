@@ -31,6 +31,7 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         Form {
+            SoftwareUpdateSection()
             Section {
                 Toggle("Launch at login", isOn: $launchAtLogin)
                 Toggle("Hide menu bar icon", isOn: $hideMenuBarIcon)
@@ -398,7 +399,6 @@ struct AboutSettingsView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 380)
-            UpdateStatusView()
             HStack {
                 Button("Permissions...") { PermissionsController.shared.show(onboarding: false) }
                 Button("Reset Onboarding") {
@@ -411,25 +411,18 @@ struct AboutSettingsView: View {
     }
 }
 
-/// Update controls for the About tab. Not in the original.
-struct UpdateStatusView: View {
+/// "Software Update" section of the General tab. Not in the original.
+struct SoftwareUpdateSection: View {
     @ObservedObject private var updater = Updater.shared
     @AppStorage(Key.autoCheckForUpdates) private var autoCheck = true
 
     var body: some View {
-        VStack(spacing: 8) {
+        Section("Software Update") {
+            LabeledContent("Version", value: "\(AppInfo.version) (\(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "?"))")
+            Toggle("Check for updates automatically", isOn: $autoCheck)
+            LabeledContent("Status") { status }
             switch updater.state {
-            case .checking:
-                ProgressView().controlSize(.small)
-                Text("Checking for updates...").foregroundStyle(.secondary)
-            case .downloading(let fraction):
-                ProgressView(value: fraction).frame(width: 220)
-                Text("Downloading update...").foregroundStyle(.secondary)
-            case .installing:
-                ProgressView().controlSize(.small)
-                Text("Installing and relaunching...").foregroundStyle(.secondary)
             case .available(let release):
-                Text("Version \(release.version) is available").fontWeight(.medium)
                 if !release.notes.isEmpty {
                     ScrollView {
                         Text(release.notes)
@@ -437,29 +430,37 @@ struct UpdateStatusView: View {
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxWidth: 380, maxHeight: 90)
+                    .frame(maxHeight: 90)
                 }
                 HStack {
-                    Button("Install and Relaunch") { updater.installAvailable() }.buttonStyle(.borderedProminent)
+                    Button("Install and Relaunch") { updater.installAvailable() }
                     Button("Release Page") { updater.openReleasePage() }
                 }
-            case .upToDate:
-                Text("You're up to date.").foregroundStyle(.secondary)
-            case .failed(let message):
-                Text(message).foregroundStyle(.red).multilineTextAlignment(.center).frame(maxWidth: 380)
-                if updater.availableRelease != nil { Button("Release Page") { updater.openReleasePage() } }
-            case .idle:
-                if let last = updater.lastChecked {
-                    Text("Last checked \(last.formatted(.relative(presentation: .named)))").font(.caption).foregroundStyle(.secondary)
-                }
+            case .downloading(let fraction):
+                ProgressView(value: fraction)
+            default:
+                Button("Check for Updates") { updater.check() }
+                    .disabled(updater.isBusy || !updater.isConfigured)
             }
-            if !updater.isBusy, updater.availableRelease == nil {
-                Button("Check for Updates") { updater.check() }.disabled(!updater.isConfigured)
-            }
+        }
+    }
+
+    @ViewBuilder private var status: some View {
+        switch updater.state {
+        case .checking: Text("Checking...").foregroundStyle(.secondary)
+        case .downloading: Text("Downloading...").foregroundStyle(.secondary)
+        case .installing: Text("Installing and relaunching...").foregroundStyle(.secondary)
+        case .available(let release): Text("Version \(release.version) available").foregroundStyle(.green)
+        case .upToDate: Text("Up to date").foregroundStyle(.secondary)
+        case .failed(let message): Text(message).foregroundStyle(.red).multilineTextAlignment(.trailing)
+        case .idle:
             if !updater.isConfigured {
-                Text("No update repository is set (UpdateRepository in Info.plist).").font(.caption).foregroundStyle(.secondary)
+                Text("No update repository set").foregroundStyle(.secondary)
+            } else if let last = updater.lastChecked {
+                Text("Checked \(last.formatted(.relative(presentation: .named)))").foregroundStyle(.secondary)
+            } else {
+                Text("Not checked yet").foregroundStyle(.secondary)
             }
-            Toggle("Check for updates automatically", isOn: $autoCheck).toggleStyle(.checkbox)
         }
     }
 }
